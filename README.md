@@ -1,5 +1,21 @@
 # Kart Yükseltme Optimizasyonu - Tam Çözüm
 
+### Hızlı Başlangıç
+
+```bash
+# Projeyi klonlayın
+git clone https://github.com/a3g34n/NoSurrenderCaseStudy.git
+
+cd NoSurrenderCaseStudy
+
+# Bağımlılıkları yükleyin
+npm install
+
+# Geliştirme sunucusunu başlatın
+npm run dev
+```
+
+
 **No Surrender Studio Vaka Çalışması Yanıtı**
 
 ## Yönetici Özeti
@@ -723,6 +739,20 @@ async def izleme_middleware(request: Request, call_next):
     
     return response
 ```
+
+## ⚠️ Edge Cases ve Çözümleri
+
+### Network Sorunları
+- **Problem**: İstek gönderilirken bağlantı kopması
+- **Çözüm**: Optimistic updates + retry mechanism
+
+### Concurrent Updates
+- **Problem**: Aynı anda birden fazla kullanıcı aynı kartı upgrade etmeye çalışır
+- **Çözüm**: Optimistic locking + version control
+
+### Energy Race Conditions
+- **Problem**: Hızlı tıklamada energy validation bypass
+- **Çözüm**: Client-side throttling + server-side validation
 
 ---
 

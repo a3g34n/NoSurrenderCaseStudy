@@ -146,7 +146,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const timeDiff = now - state.user.lastEnergyUpdate;
       const intervals = Math.floor(timeDiff / ENERGY_REGEN_INTERVAL);
       
-      if (intervals > 0) {
+      if (intervals > 0 && state.user.energy < state.user.maxEnergy) {
         const newEnergy = Math.min(
           state.user.maxEnergy,
           state.user.energy + (intervals * ENERGY_REGEN_RATE)
@@ -188,7 +188,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 }));
 
-// Auto-regenerate energy
+// Auto-regenerate energy every second
 setInterval(() => {
   useGameStore.getState().regenerateEnergy();
 }, 1000);
