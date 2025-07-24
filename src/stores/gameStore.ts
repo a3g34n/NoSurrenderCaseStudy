@@ -4,7 +4,7 @@ import { GameState, Card, UpgradeMode } from '@/types/game';
 const ENERGY_REGEN_RATE = 10; // energy per 30 seconds
 const ENERGY_REGEN_INTERVAL = 30000; // 30 seconds
 
-// Initial mock data
+// Initial mock data - Fixed upgrade costs for 2% per 1 energy
 const initialCards: Card[] = [
   {
     id: '1',
@@ -13,7 +13,7 @@ const initialCards: Card[] = [
     level: 1,
     progress: 0,
     maxProgress: 100,
-    upgradeCost: 2,
+    upgradeCost: 0.5, // 1 energy = 2 progress points = 2% increase
   },
   {
     id: '2',
@@ -22,7 +22,7 @@ const initialCards: Card[] = [
     level: 1,
     progress: 0,
     maxProgress: 100,
-    upgradeCost: 2,
+    upgradeCost: 0.5, // 1 energy = 2 progress points = 2% increase
   },
   {
     id: '3',
@@ -31,7 +31,7 @@ const initialCards: Card[] = [
     level: 1,
     progress: 0,
     maxProgress: 100,
-    upgradeCost: 2,
+    upgradeCost: 0.5, // 1 energy = 2 progress points = 2% increase
   },
   {
     id: '4',
@@ -40,7 +40,7 @@ const initialCards: Card[] = [
     level: 1,
     progress: 0,
     maxProgress: 100,
-    upgradeCost: 2,
+    upgradeCost: 0.5, // 1 energy = 2 progress points = 2% increase
   },
 ];
 
@@ -72,30 +72,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isUpgrading: false,
 
   // Actions
-  upgradeCard: (cardId: string, amount = 1) => {
-    const state = get();
-    const card = state.cards.find(c => c.id === cardId);
-    if (!card || card.level >= 3) return;
-
-    const energyGain = 2 * amount;
-    
-    set(state => ({
-      user: {
-        ...state.user,
-        energy: Math.min(state.user.maxEnergy, state.user.energy + energyGain),
-      },
-      cards: state.cards.map(c => {
-        if (c.id === cardId) {
-          const newProgress = Math.min(c.maxProgress, c.progress + amount);
-          
-          return {
-            ...c,
-            progress: newProgress,
-          };
-        }
-        return c;
-      }),
-    }));
+  upgradeCard: (cardId: string, amount: number) => {
+    set(state => {
+      const card = state.cards.find(c => c.id === cardId);
+      if (!card || card.level >= 3) return state;
+      
+      // For 2% per 1 energy: 1 energy = 2 progress points
+      const progressIncrease = amount * 2; // 2% per energy
+      const totalCost = amount; // 1 energy per upgrade action
+      
+      // Check if we have enough energy
+      if (state.user.energy < totalCost) return state;
+      
+      // Deduct energy and update card progress
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          energy: state.user.energy - totalCost,
+        },
+        cards: state.cards.map(c => {
+          if (c.id === cardId) {
+            const newProgress = Math.min(c.maxProgress, c.progress + progressIncrease);
+            
+            return {
+              ...c,
+              progress: newProgress,
+            };
+          }
+          return c;
+        }),
+      };
+    });
   },
 
   upgradeCardToMax: (cardId: string) => {
@@ -104,8 +112,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!card || card.level >= 3) return;
     
     const remainingProgress = card.maxProgress - card.progress;
-    if (remainingProgress > 0) {
-      state.upgradeCard(cardId, remainingProgress);
+    // Calculate how many energy points needed (each energy gives 2 progress)
+    const energyNeeded = Math.ceil(remainingProgress / 2);
+    
+    // Check if we have enough energy for max upgrade
+    if (state.user.energy >= energyNeeded && remainingProgress > 0) {
+      state.upgradeCard(cardId, energyNeeded);
     }
   },
 
@@ -157,7 +169,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   canAffordUpgrade: (cardId: string, amount: number) => {
     const state = get();
     const card = state.cards.find(c => c.id === cardId);
-    return card ? card.level < 3 : false;
+    if (!card || card.level >= 3) return false;
+    
+    // 1 energy per upgrade action
+    return state.user.energy >= amount;
   },
 
   getMaxUpgradeAmount: (cardId: string) => {
@@ -165,7 +180,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const card = state.cards.find(c => c.id === cardId);
     if (!card || card.level >= 3) return 0;
     
-    return card.maxProgress - card.progress;
+    const remainingProgress = card.maxProgress - card.progress;
+    // Calculate max energy we can use (each energy gives 2 progress)
+    const maxEnergyNeeded = Math.ceil(remainingProgress / 2);
+    
+    return Math.min(maxEnergyNeeded, state.user.energy);
   },
 }));
 
